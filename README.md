@@ -1,7 +1,7 @@
 # Portfolio Website
  
 ## Description
-    The final website should allow users to click on three models that will function as buttons, opening animated panels with corresponding information.
+The final website should allow users to click on three models that will function as buttons, opening animated panels with corresponding information.
 ## Steps to open the website:
 1. **Have Node.js installed and download ZIP of code.**
 2. **Drag the file inside the unzipped folder into Visual Studio Code.**
