@@ -5,22 +5,24 @@ import HomeBackground from './HomeBackground'
 import * as THREE from 'three';
 import { Html, PerspectiveCamera, OrbitControls, Float } from '@react-three/drei';
 import { MotionCanvas, motion } from "framer-motion-3d"
+import TestPage from './HomeBackground';
 
 const App = () => {
   return (
-      <div className="relative w-screen h-screen top-0">
-        <Canvas>
-          <color attach="background" args={["#101010"]} />
-          <fog attach="fog" args={["#101010", 10, 20]} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1} />
-          <PerspectiveCamera makeDefault position={[0, 1, 7]} />
-          <HomeBackground />
-          <Html center>
-            <Home />
-          </Html>
-        </Canvas>
-      </div>
+      // <div className="relative w-screen h-screen top-0">
+      //   <Canvas>
+      //     <color attach="background" args={["#101010"]} />
+      //     <fog attach="fog" args={["#101010", 10, 20]} />
+      //     <ambientLight intensity={0.5} />
+      //     <directionalLight position={[5, 5, 5]} intensity={1} />
+      //     <PerspectiveCamera makeDefault position={[0, 1, 7]} />
+           <HomeBackground />
+      //     {/* <TestPage /> */}
+      //     <Html center>
+      //       <Home />
+      //     </Html>
+      //   </Canvas>
+      // </div>
   )
 }
 
