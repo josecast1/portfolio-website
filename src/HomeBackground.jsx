@@ -1,87 +1,161 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { Float } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Float, SpotLight, Text, Text3D, MeshReflectorMaterial, Center } from '@react-three/drei';
 
 const HomeBackground = () => {
-  const [hoveredMesh, setHoveredMesh] = useState(null); // Track hovered mesh
-  const [selectedMesh, setSelectedMesh] = useState(null); // Track selected mesh
-  const [targetPosition, setTargetPosition] = useState(null); // Target camera position
-  const [initialCameraPosition, setInitialCameraPosition] = useState(null); // Initial camera position
+  const [selectedMeshName, setSelectedMeshName] = useState(null); // Track selected mesh by name
 
-  // Mesh Component
-  const HoverableMesh = ({ position, color, hoverColor, name }) => {
+  // Mesh Component with Text
+  const HoverableMesh = ({ position, color, hoverColor, name, floatDelay }) => {
     const meshRef = useRef();
 
     return (
-      <mesh
-        ref={meshRef}
-        position={position}
-        onPointerEnter={() => setHoveredMesh(meshRef.current)}
-        onPointerLeave={() => setHoveredMesh(null)}
-        onClick={() => {
-          setSelectedMesh(name);
-          setTargetPosition([position[0], position[1], position[2] + 2]); // Adjust the Z distance
-        }}
-      >
-        <boxGeometry />
-        <meshStandardMaterial color={hoveredMesh === meshRef.current ? hoverColor : color} />
-      </mesh>
+      <>
+        <mesh
+          ref={meshRef}
+          position={position}
+          castShadow={true} // Ensure the mesh casts shadows
+          receiveShadow={true} // Ensures the mesh receives shadows
+          onClick={() => setSelectedMeshName(selectedMeshName === name ? null : name)}
+        >
+          <boxGeometry />
+          <meshStandardMaterial color={selectedMeshName === name ? hoverColor : color} />
+        </mesh>
+        <Text
+          position={[position[0], position[1] + 1.2, position[2]]}
+          fontSize={0.4}
+          color={selectedMeshName === name ? 'yellow' : 'white'}
+          anchorX="center"
+          anchorY="middle"
+          font="/Roboto-Bold.ttf"
+        >
+          {name}
+        </Text>
+      </>
     );
   };
 
-  // Camera movement logic
-  const CameraController = () => {
-    const { camera } = useThree();
+  // Spotlight Component
+  const Spotlight = ({ targetName }) => {
+    if (!targetName) return null;
 
-    useEffect(() => {
-      // Store the initial camera position
-      if (!initialCameraPosition) {
-        setInitialCameraPosition(camera.position.clone());
-      }
-    }, [camera, initialCameraPosition]);
+    // Spotlight positions based on mesh names
+    const spotlightPositions = {
+      About: [-3, 5, 0],
+      Projects: [0, 5, 0],
+      Contact: [3, 5, 0],
+    };
 
-    useFrame(() => {
-      if (targetPosition) {
-        const target = new THREE.Vector3(...targetPosition);
-        camera.position.lerp(target, 0.1); // Smoothly move camera
-        camera.lookAt(targetPosition[0], targetPosition[1], targetPosition[2]); // Ensure the camera looks at the mesh
-      } else if (initialCameraPosition) {
-        // Reset camera to its initial position
-        camera.position.lerp(initialCameraPosition, 0.1);
-        camera.lookAt(0, 0, 0); // Reset to center look-at point
-      }
-    });
+    const [x, y, z] = spotlightPositions[targetName];
 
-    return null;
+    return (
+      <SpotLight
+        position={[x, y, z]} // Position directly above the selected mesh
+        angle={0.5}
+        intensity={100}
+        penumbra={1}
+        distance={8}
+        color="white"
+        castShadow // Ensure spotlight casts shadows
+        target-position={[x, 0, z]} // Directly shine downward at the mesh's base position
+      />
+    );
   };
 
+  // Generate random float delays to stagger mesh animations
+  const randomizeFloatDelay = () => Math.random() ;
+
   return (
-    <div style={{ height: '100vh', position: 'relative', backgroundColor: 'black' }}>
-      <Canvas>
+    <div style={{ height: '100vh', position: 'relative' }}>
+      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 2, 10], fov: 50 }}>
         {/* Lighting */}
         <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
+        <directionalLight position={[5, 5, 5]} intensity={0.5} />
+        <color attach="background" args={["#101010"]} />
+        <fog attach="fog" args={["#101010", 10, 20]} />
 
-        {/* Floating and Hoverable Meshes */}
-        <Float speed={4} rotationIntensity={0.5} floatIntensity={1}>
+        {/* Spotlight */}
+        <Spotlight targetName={selectedMeshName} />
+
+        {/* Plane for Shadows */}
+        <mesh
+          receiveShadow={true} // Ensure floor receives shadows
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.8, 0]}
+        >
+          <planeGeometry args={[170, 170]} />
+          <MeshReflectorMaterial
+            blur={[300, 100]}
+            resolution={2048}
+            mixBlur={1}
+            mixStrength={40}
+            roughness={1}
+            depthScale={1.2}
+            minDepthThreshold={0.4}
+            maxDepthThreshold={1.4}
+            color="#101010"
+            metalness={0.5}
+          />
+        </mesh>
+
+        {/* Welcome Text */}
+        <Center top position={[0, 3, -20]}>
+        <Float
+          speed={7}
+          rotationIntensity={0.2}
+          floatIntensity={2}
+        >
+          <Text3D
+            position={[-2, 3, 0]}
+            rotation={[0, 0, 0]}
+            curveSegments={32}
+            bevelEnabled
+            bevelSize={0.04}
+            bevelThickness={0.1}
+            height={0.5}
+            lineHeight={0.5}
+            letterSpacing={-0.06}
+            size={1.5}
+            font="/Inter_Bold.json"
+          >
+            Hello my name
+            <meshNormalMaterial />
+          </Text3D>
+          <Text3D
+            position={[-2, 1, 0]}
+            rotation={[0, 0, 0]}
+            curveSegments={32}
+            bevelEnabled
+            bevelSize={0.04}
+            bevelThickness={0.1}
+            height={0.5}
+            lineHeight={0.5}
+            letterSpacing={-0.06}
+            size={1.5}
+            font="/Inter_Bold.json"
+          >
+            is Jose Castro!
+            <meshNormalMaterial />
+          </Text3D>
+        </Float>
+        </Center>
+
+        {/* Floating and Hoverable Meshes with Randomized Float Delays */}
+        <Float speed={4} rotationIntensity={0.5} floatIntensity={1} floatDelay={randomizeFloatDelay()}>
           <HoverableMesh position={[-3, 0, 0]} color="blue" hoverColor="lightblue" name="About" />
         </Float>
 
-        <Float speed={4} rotationIntensity={0.5} floatIntensity={1}>
+        <Float speed={4} rotationIntensity={0.5} floatIntensity={1} floatDelay={randomizeFloatDelay()}>
           <HoverableMesh position={[0, 0, 0]} color="green" hoverColor="lightgreen" name="Projects" />
         </Float>
 
-        <Float speed={4} rotationIntensity={0.5} floatIntensity={1}>
+        <Float speed={4} rotationIntensity={0.5} floatIntensity={1} floatDelay={randomizeFloatDelay()}>
           <HoverableMesh position={[3, 0, 0]} color="red" hoverColor="pink" name="Contact" />
         </Float>
-
-        {/* Camera Controller */}
-        <CameraController />
       </Canvas>
 
       {/* Info Panel */}
-      {selectedMesh && (
+      {selectedMeshName && (
         <div
           style={{
             position: 'absolute',
@@ -95,11 +169,11 @@ const HomeBackground = () => {
             boxShadow: '0px 0px 10px rgba(255, 255, 255, 0.5)',
           }}
         >
-          <h3>{selectedMesh}</h3>
+          <h3>{selectedMeshName}</h3>
           <p>
-            {selectedMesh === 'About' && 'This is the about section.'}
-            {selectedMesh === 'Projects' && 'Here are some of the projects.'}
-            {selectedMesh === 'Contact' && 'Reach out to us through contact info.'}
+            {selectedMeshName === 'About' && 'This is the about section.'}
+            {selectedMeshName === 'Projects' && 'Here are some of the projects.'}
+            {selectedMeshName === 'Contact' && 'Reach out to us through contact info.'}
           </p>
           <button
             style={{
@@ -111,10 +185,7 @@ const HomeBackground = () => {
               borderRadius: '5px',
               cursor: 'pointer',
             }}
-            onClick={() => {
-              setSelectedMesh(null);
-              setTargetPosition(null); // Reset camera target
-            }}
+            onClick={() => setSelectedMeshName(null)}
           >
             Close
           </button>
