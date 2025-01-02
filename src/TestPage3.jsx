@@ -127,9 +127,9 @@ const HoverableMesh = ({ position, hoverColor, name, onSelect, selectedName }) =
 
   // Load the appropriate model based on the name
   const modelPaths = {
-    About: '/models/About.glb',
-    Projects: '/models/Projects.glb',
-    Contact: '/models/Contact.glb',
+    About: 'models/About.glb',
+    Projects: 'models/Projects.glb',
+    Contact: 'models/Contact.glb',
   };
 
   const { scene } = useGLTF(modelPaths[name]);
