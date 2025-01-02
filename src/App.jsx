@@ -5,7 +5,9 @@ import HomeBackground from './HomeBackground'
 import * as THREE from 'three';
 import { Html, PerspectiveCamera, OrbitControls, Float } from '@react-three/drei';
 import { MotionCanvas, motion } from "framer-motion-3d"
-import TestPage from './HomeBackground';
+import TestPage from './TestPage';
+import TestPage2 from './TestPage2';
+import TestPage3 from './TestPage3';
 
 const App = () => {
   return (
@@ -16,7 +18,10 @@ const App = () => {
       //     <ambientLight intensity={0.5} />
       //     <directionalLight position={[5, 5, 5]} intensity={1} />
       //     <PerspectiveCamera makeDefault position={[0, 1, 7]} />
-           <HomeBackground />
+
+          //  <HomeBackground />
+           <TestPage3 />
+           
       //     {/* <TestPage /> */}
       //     <Html center>
       //       <Home />

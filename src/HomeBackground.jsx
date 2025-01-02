@@ -1,146 +1,211 @@
 import React, { useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, SpotLight, Text, Text3D, MeshReflectorMaterial, Center } from '@react-three/drei';
+import { Physics, RigidBody } from '@react-three/rapier';
+import { useSpring, animated, config } from '@react-spring/three';
 
 const HomeBackground = () => {
-  const [selectedMeshName, setSelectedMeshName] = useState(null); // Track selected mesh by name
+  const [selectedMeshName, setSelectedMeshName] = useState(null);
 
-  // Mesh Component with Text
+  // Modified Mesh Component with Text and Animations
   const HoverableMesh = ({ position, color, hoverColor, name, floatDelay }) => {
     const meshRef = useRef();
+    const [hovered, setHovered] = useState(false);
+    const isSelected = selectedMeshName === name;
+
+    // Separate springs for different properties for better control
+    const { position: animatedPosition } = useSpring({
+      position: isSelected ? [position[0], position[1], 2] : [position[0], position[1], 0],
+      config: { mass: 1, tension: 180, friction: 12 }
+    });
+
+    const { scale } = useSpring({
+      scale: isSelected || hovered ? 1.2 : 1,
+      config: { mass: 1, tension: 170, friction: 26 }
+    });
+
+    useFrame((state, delta) => {
+      if (meshRef.current) {
+        if (isSelected) {
+          // Smooth continuous rotation when selected
+          meshRef.current.rotation.y += delta * 2;
+        } else {
+          // Smoothly return to original rotation
+          meshRef.current.rotation.y *= 0.95;
+        }
+      }
+    });
 
     return (
       <>
-        <mesh
+        <animated.mesh
           ref={meshRef}
-          position={position}
-          castShadow={true} // Ensure the mesh casts shadows
-          receiveShadow={true} // Ensures the mesh receives shadows
-          onClick={() => setSelectedMeshName(selectedMeshName === name ? null : name)}
+          position={animatedPosition}
+          scale={scale}
+          castShadow
+          receiveShadow
+          onClick={() => setSelectedMeshName(isSelected ? null : name)}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
         >
           <boxGeometry />
-          <meshStandardMaterial color={selectedMeshName === name ? hoverColor : color} />
-        </mesh>
-        <Text
-          position={[position[0], position[1] + 1.2, position[2]]}
-          fontSize={0.4}
-          color={selectedMeshName === name ? 'yellow' : 'white'}
-          anchorX="center"
-          anchorY="middle"
-          font="/Roboto-Bold.ttf"
-        >
-          {name}
-        </Text>
+          <meshStandardMaterial color={isSelected || hovered ? hoverColor : color} />
+        </animated.mesh>
+        <animated.group position={animatedPosition}>
+          <Text
+            position={[0, 1.2, 0]}
+            fontSize={0.4}
+            color={isSelected ? 'yellow' : 'white'}
+            anchorX="center"
+            anchorY="middle"
+            font="/Roboto-Bold.ttf"
+          >
+            {name}
+          </Text>
+        </animated.group>
       </>
     );
   };
 
-  // Spotlight Component
   const Spotlight = ({ targetName }) => {
     if (!targetName) return null;
 
-    // Spotlight positions based on mesh names
     const spotlightPositions = {
-      About: [-3, 5, 0],
-      Projects: [0, 5, 0],
-      Contact: [3, 5, 0],
+      About: [-3, 5, 2],
+      Projects: [0, 5, 2],
+      Contact: [3, 5, 2],
     };
 
     const [x, y, z] = spotlightPositions[targetName];
 
     return (
       <SpotLight
-        position={[x, y, z]} // Position directly above the selected mesh
+        position={[x, y, z]}
         angle={0.5}
         intensity={100}
         penumbra={1}
         distance={8}
         color="white"
-        castShadow // Ensure spotlight casts shadows
-        target-position={[x, 0, z]} // Directly shine downward at the mesh's base position
+        castShadow
+        target-position={[x, 0, z]}
       />
     );
   };
 
-  // Generate random float delays to stagger mesh animations
-  const randomizeFloatDelay = () => Math.random() ;
+  const randomizeFloatDelay = () => Math.random();
+
+  const DraggableText = ({ children, position }) => {
+    const rigidBodyRef = useRef();
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const bodyStart = useRef({ x: 0, y: 0 });
+  
+    const handlePointerDown = (event) => {
+      if (!rigidBodyRef.current) return;
+      event.stopPropagation();
+      setIsDragging(true);
+      
+      dragStart.current = { x: event.point.x, y: event.point.y };
+      const currentPos = rigidBodyRef.current.translation();
+      bodyStart.current = { x: currentPos.x, y: currentPos.y };
+      
+      rigidBodyRef.current.setGravityScale(0);
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    };
+  
+    const handlePointerMove = (event) => {
+      if (!isDragging || !rigidBodyRef.current) return;
+      
+      const deltaX = event.point.x - dragStart.current.x;
+      const deltaY = event.point.y - dragStart.current.y;
+      
+      const newX = bodyStart.current.x + deltaX;
+      const newY = Math.max(-0.5, bodyStart.current.y + deltaY);
+      
+      const currentPos = rigidBodyRef.current.translation();
+      rigidBodyRef.current.setTranslation(
+        { x: newX, y: newY, z: currentPos.z },
+        true
+      );
+      
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    };
+  
+    const handlePointerUp = () => {
+      if (!rigidBodyRef.current) return;
+      setIsDragging(false);
+      rigidBodyRef.current.setGravityScale(1);
+    };
+  
+    return (
+      <RigidBody
+        ref={rigidBodyRef}
+        restitution={0.9}
+        friction={0.1}
+        position={position}
+        colliders="cuboid"
+      >
+        <Center>
+          <Text3D
+            curveSegments={32}
+            bevelEnabled
+            bevelSize={0.04}
+            bevelThickness={0.1}
+            height={0.5}
+            lineHeight={0.5}
+            letterSpacing={-0.06}
+            size={1.5}
+            font="/Inter_Bold.json"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            {children}
+            <meshNormalMaterial />
+          </Text3D>
+        </Center>
+      </RigidBody>
+    );
+  };
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 2, 10], fov: 50 }}>
-        {/* Lighting */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 5, 5]} intensity={0.5} />
         <color attach="background" args={["#101010"]} />
         <fog attach="fog" args={["#101010", 10, 20]} />
 
-        {/* Spotlight */}
         <Spotlight targetName={selectedMeshName} />
 
-        {/* Plane for Shadows */}
-        <mesh
-          receiveShadow={true} // Ensure floor receives shadows
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, -0.8, 0]}
-        >
-          <planeGeometry args={[170, 170]} />
-          <MeshReflectorMaterial
-            blur={[300, 100]}
-            resolution={2048}
-            mixBlur={1}
-            mixStrength={40}
-            roughness={1}
-            depthScale={1.2}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#101010"
-            metalness={0.5}
-          />
-        </mesh>
+        <Physics gravity={[0, 0, 0]}>
+          <DraggableText position={[0, 5, -10]}>Hello my name</DraggableText>
+          <DraggableText position={[0, 3, -10]}>is Jose Castro!</DraggableText>
+          
+          <RigidBody type="fixed">
+            <mesh
+              receiveShadow={true}
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[0, -0.8, 0]}
+            >
+              <planeGeometry args={[170, 170]} />
+              <MeshReflectorMaterial
+                blur={[300, 100]}
+                resolution={2048}
+                mixBlur={1}
+                mixStrength={40}
+                roughness={1}
+                depthScale={1.2}
+                minDepthThreshold={0.4}
+                maxDepthThreshold={1.4}
+                color="#101010"
+                metalness={0.5}
+              />
+            </mesh>
+          </RigidBody>
+        </Physics>
 
-        {/* Welcome Text */}
-        <Center top position={[0, 3, -20]}>
-        <Float
-          speed={7}
-          rotationIntensity={0.2}
-          floatIntensity={2}
-        >
-          <Text3D
-            position={[-2, 3, 0]}
-            rotation={[0, 0, 0]}
-            curveSegments={32}
-            bevelEnabled
-            bevelSize={0.04}
-            bevelThickness={0.1}
-            height={0.5}
-            lineHeight={0.5}
-            letterSpacing={-0.06}
-            size={1.5}
-            font="/Inter_Bold.json"
-          >
-            Hello my name
-            <meshNormalMaterial />
-          </Text3D>
-          <Text3D
-            position={[-2, 1, 0]}
-            rotation={[0, 0, 0]}
-            curveSegments={32}
-            bevelEnabled
-            bevelSize={0.04}
-            bevelThickness={0.1}
-            height={0.5}
-            lineHeight={0.5}
-            letterSpacing={-0.06}
-            size={1.5}
-            font="/Inter_Bold.json"
-          >
-            is Jose Castro!
-            <meshNormalMaterial />
-          </Text3D>
-        </Float>
-        </Center>
-
-        {/* Floating and Hoverable Meshes with Randomized Float Delays */}
         <Float speed={4} rotationIntensity={0.5} floatIntensity={1} floatDelay={randomizeFloatDelay()}>
           <HoverableMesh position={[-3, 0, 0]} color="blue" hoverColor="lightblue" name="About" />
         </Float>
@@ -154,7 +219,6 @@ const HomeBackground = () => {
         </Float>
       </Canvas>
 
-      {/* Info Panel */}
       {selectedMeshName && (
         <div
           style={{
