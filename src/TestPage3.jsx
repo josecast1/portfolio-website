@@ -8,27 +8,88 @@ import * as THREE from 'three'
 import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/postprocessing'
 
 
-const CameraAnimation = () => {
-    const { camera } = useThree();
-    
-    const { cameraY } = useSpring({
-      from: { cameraY: 10 },
-      to: { cameraY: 2 },
-      delay: 0,
-      config: {
-        mass: 1,
-        tension: 20,
-        friction: 15
-      }
-    });
+const CameraAnimation = ({ selectedName }) => {
+  const { camera } = useThree();
+  const prevSelectedRef = useRef(selectedName);
+  const initialY = 10;
+  const targetY = 2;
   
-    useFrame(() => {
-      camera.position.y = cameraY.get();
-      camera.lookAt(0, -4000, -100000); // Ensure the camera always looks at the origin
-    });
-  
-    return null;
+  // Calculate camera position based on selected mesh
+  const getSelectedPosition = (name) => {
+    switch(name) {
+      case 'About':
+        return [-3, 1, 8];
+      case 'Projects':
+        return [0, 1, 8];
+      case 'Contact':
+        return [3, 1, 8];
+      default:
+        return [0, targetY, 10];
+    }
   };
+
+  // Calculate look-at point based on selected mesh
+  const getLookAtPosition = (name) => {
+    switch(name) {
+      case 'About':
+        return [0, 0.2, 0];
+      case 'Projects':
+        return [3, 0.4, 0];
+      case 'Contact':
+        return [6, 0.3, 0];
+      default:
+        return [0, 2, 0];
+    }
+  };
+
+  // Store previous position before transition
+  useEffect(() => {
+    prevSelectedRef.current = selectedName;
+  }, [selectedName]);
+
+  // Combined spring for all camera movements
+  const { cameraX, cameraY, cameraZ, lookAtX, lookAtY, lookAtZ } = useSpring({
+    cameraX: selectedName ? getSelectedPosition(selectedName)[0] : 0,
+    cameraY: selectedName ? getSelectedPosition(selectedName)[1] : targetY,
+    cameraZ: selectedName ? getSelectedPosition(selectedName)[2] : 10,
+    lookAtX: selectedName ? getLookAtPosition(selectedName)[0] : 0,
+    lookAtY: selectedName ? getLookAtPosition(selectedName)[1] : 2,
+    lookAtZ: selectedName ? getLookAtPosition(selectedName)[2] : 0,
+    from: {
+      cameraX: prevSelectedRef.current ? getSelectedPosition(prevSelectedRef.current)[0] : camera.position.x,
+      cameraY: prevSelectedRef.current ? getSelectedPosition(prevSelectedRef.current)[1] : camera.position.y,
+      cameraZ: prevSelectedRef.current ? getSelectedPosition(prevSelectedRef.current)[2] : camera.position.z,
+      lookAtX: prevSelectedRef.current ? getLookAtPosition(prevSelectedRef.current)[0] : 0,
+      lookAtY: prevSelectedRef.current ? getLookAtPosition(prevSelectedRef.current)[1] : 2,
+      lookAtZ: prevSelectedRef.current ? getLookAtPosition(prevSelectedRef.current)[2] : 0,
+    },
+    config: {
+      mass: 3,
+      tension: 150,
+      friction: 25,
+      precision: 0.001,
+    },
+    immediate: false,
+  });
+
+  useFrame(() => {
+    // Smooth position transition
+    camera.position.set(
+      cameraX.get(),
+      cameraY.get(),
+      cameraZ.get()
+    );
+    
+    // Smooth look-at transition
+    camera.lookAt(
+      lookAtX.get(),
+      lookAtY.get(),
+      lookAtZ.get()
+    );
+  });
+
+  return null;
+};
 
 // Separate component for the info panel to prevent unnecessary rerenders
 const InfoPanel = ({ name, onClose }) => {
@@ -96,12 +157,12 @@ const InfoPanel = ({ name, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center ${
-        isClosing ? "animate-scale-out" : "animate-scale-in"
+      className={`fixed right-0 top-1/2 -translate-y-1/2 z-50 mr-8 ${
+        isClosing ? "animate-slide-out-right" : "animate-slide-in-right"
       } pointer-events-none`}
     >
       <div
-        className="bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white p-6 rounded-lg shadow-2xl max-w-md pointer-events-auto transform transition-transform duration-300 ease-in-out"
+        className="bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white p-6 rounded-lg shadow-2xl max-w-md w-96 pointer-events-auto"
       >
         <h3 className="text-2xl font-semibold mb-4 text-center border-b border-gray-700 pb-2">
           {name}
@@ -662,7 +723,7 @@ const HomeBackground = () => {
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 10, 10], fov: 50 }}>
-      <CameraAnimation />
+      <CameraAnimation selectedName={selectedName} />
       <EffectComposer>
         <Bloom 
           intensity={0.1} 
@@ -689,14 +750,14 @@ const HomeBackground = () => {
         
         {selectedName && (
           <SpotLight
-            position={[selectedName === 'About' ? -3 : selectedName === 'Projects' ? 0 : 3, 5, 3]}
+            position={[selectedName === 'About' ? -3 : selectedName === 'Projects' ? 0 : 3, 4, 1]}
             angle={0.5}
             intensity={100}
             penumbra={1}
             distance={8}
             color="white"
             castShadow
-            target-position={[selectedName === 'About' ? -3 : selectedName === 'Projects' ? 0 : 3, 0, 3]}
+            target-position={[selectedName === 'About' ? -3 : selectedName === 'Projects' ? 0 : 3, 0, 2]}
           />
         )}
 
@@ -714,7 +775,7 @@ const HomeBackground = () => {
               <MeshReflectorMaterial
                 blur={[300, 100]}
                 resolution={2048}
-                mixBlur={1}
+                mixBlur={0.8}
                 mixStrength={40}
                 roughness={1}
                 depthScale={1.2}
