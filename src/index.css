@@ -7,3 +7,34 @@
 .h-300{
     height: 300vh;
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes preload {
+    from {
+      background-image: url('/PortfolioHeadshot.jpg');
+    }
+    to {
+      background-image: url('/PortfolioHeadshot.jpg');
+    }
+  }
+  
+  .hidden-preloader {
+    animation: preload 0s;
+  }
