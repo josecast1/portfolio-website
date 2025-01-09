@@ -10,25 +10,25 @@ export default {
       keyframes: {
         scaleIn: {
           '0%': { 
-            transform: 'translate(0, 20%) scale(0.95)',
+            transform: 'translate(0, 20%) scale(var(--viewport-scale))',
             opacity: '0' 
           },
           '70%': { 
-            transform: 'translate(0, -52%) scale(1.02)',
+            transform: 'translate(0, -52%) scale(var(--viewport-scale))',
             opacity: '1' 
           },
           '100%': { 
-            transform: 'translate(0, -50%) scale(1)',
+            transform: 'translate(0, -50%) scale(var(--viewport-scale))',
             opacity: '1' 
           },
         },
         scaleOut: {
           '0%': { 
-            transform: 'translate(0, -50%) scale(1)',
+            transform: 'translate(0, -50%) scale(var(--viewport-scale))',
             opacity: '1' 
           },
           '100%': { 
-            transform: 'translate(0, 20%) scale(0.95)',
+            transform: 'translate(0, 20%) scale(var(--viewport-scale))',
             opacity: '0' 
           },
         },

@@ -7,14 +7,14 @@ This portfolio website showcases an interactive 3D experience:
 - There are draggable meshes on the sides that can be picked up and dropped, featuring physics interactions with other meshes.
 - The title includes an animation that reacts to mouse hover.
 
-## Live Demo
+## Live Site
 You can view the live version of the website here:  
 [**https://joseportfoliowebsite.vercel.app/**](https://joseportfoliowebsite.vercel.app/)  
 
 ## Steps to run locally:
 1. **Have Node.js installed.**
 2. **Click on the "Code" button on the top of the page and download the ZIP file.**
-3. **Drag the file inside the unzipped folder into Visual Studio Code.**
+3. **Drag the file inside the unzipped folder into Visual Studio Code, or your preferred IDE.**
 4. **In VSCode, open the terminal and type:**
     ```
     npm install

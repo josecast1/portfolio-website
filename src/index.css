@@ -25,16 +25,3 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
-
-  @keyframes preload {
-    from {
-      background-image: url('/PortfolioHeadshot.jpg');
-    }
-    to {
-      background-image: url('/PortfolioHeadshot.jpg');
-    }
-  }
-  
-  .hidden-preloader {
-    animation: preload 0s;
-  }
